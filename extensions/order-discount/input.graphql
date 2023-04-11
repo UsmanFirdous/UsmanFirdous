@@ -1,0 +1,22 @@
+query Input {
+     cart {
+    lines {
+      cost {
+        subtotalAmount {
+          amount
+        }
+      }
+      quantity
+      merchandise {
+        __typename
+        ...on ProductVariant {
+            id
+            metafield(namespace: "Volume Discount", key: "function-configuration")
+            {
+              value
+            }
+        }
+      }
+    }
+  }
+}

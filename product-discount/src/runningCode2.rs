@@ -43,7 +43,7 @@ fn function(input: input::ResponseData) -> Result<output::FunctionResult> {
        },
         None => return Ok(no_discount),
     };
-  //  println!("config{:?}",config);
+   // println!("config{:?}",config);
    // let mut flag=0;
     let mut dis = Vec::new();
     for node in config.iter() {
