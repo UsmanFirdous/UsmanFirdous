@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 struct Input {
     cart: Option<Cart>,
     discountNode: Option<DiscountNode>,
+    presentmentCurrencyRate:Option<String>
 }
 
 #[derive(Deserialize, Serialize)]
@@ -18,6 +19,7 @@ struct CartLine {
     quantity: i64,
     cost: CartLineCost,
     merchandise: Option<Merchandise>
+   
 }
 
 #[derive(Deserialize, Serialize)]
@@ -36,8 +38,8 @@ struct Condition {
     quantity: i64,
     discount_value: f64,
     discount_type: String,
+    discount_max_value: f64
 }
-
 #[derive(Deserialize, Serialize)]
 struct CartLineCost {
     subtotalAmount: MoneyV2,
@@ -94,6 +96,11 @@ struct OrderSubtotal {
 #[shopify_function]
 fn function(input: Input) -> Result<Output> {
     let mut total_discount_amount : f64 = 0.0;
+    let mut currencyRate =0.0;
+    if let Some(present_currency_rate) = input.presentmentCurrencyRate{
+        currencyRate = present_currency_rate.parse().unwrap();
+        eprintln!("currency:{}", currencyRate); 
+    } 
     // prepare cart_lines for easy usage
     let mut cart_lines: Vec<ModifiedCartLine> = vec![];
     if let Some(cart) = input.cart {
@@ -106,7 +113,8 @@ fn function(input: Input) -> Result<Output> {
                             // let json_string = serde_json::to_string_pretty(&metafield_value).unwrap();
                             // eprintln!("variants metafield_value: {}", json_string);  
                         let parsed_value: Vec<Condition> = serde_json::from_str(&metafield_value).unwrap();
-                        let line_cost = line.cost.subtotalAmount.amount.parse::<f64>().unwrap_or(0.0);
+                        let mut line_cost = line.cost.subtotalAmount.amount.parse::<f64>().unwrap_or(0.0);
+                        line_cost=line_cost*currencyRate;
                         let quantity= line.quantity;
                        // println!("{:?}",parsed_value);
                         for con in parsed_value.iter() {
@@ -116,11 +124,19 @@ fn function(input: Input) -> Result<Output> {
                               //  println!("type match with F");
                             // eprintln!("discount_value{}", con.discount_value);    
                            line_item_discount_amount = con.discount_value;
+                          
                             }
-                            else {
+                            else if con.discount_type == "P".to_string() {
                               //  println!("type match with P");
-                            line_item_discount_amount = con.discount_value * line_cost  * 0.01;    
+                            line_item_discount_amount = con.discount_value * line_cost  * 0.01; 
+                            if line_item_discount_amount>con.discount_max_value {
+                                line_item_discount_amount = con.discount_max_value;
+                               }   
                             }
+                            // else
+                            // {
+                            //     let rounded_discount=
+                            // }
                          }
                          }
 
@@ -132,7 +148,7 @@ fn function(input: Input) -> Result<Output> {
         }
     }
    
-
+    total_discount_amount=total_discount_amount*currencyRate;
     let targets = vec![Target {
         orderSubtotal: OrderSubtotal {
             excludedVariantIds: vec![],
