@@ -123,20 +123,25 @@ fn function(input: Input) -> Result<Output> {
                             if con.discount_type == "F".to_string() {
                               //  println!("type match with F");
                             // eprintln!("discount_value{}", con.discount_value);    
-                           line_item_discount_amount = con.discount_value;
+                           line_item_discount_amount = con.discount_value * currencyRate;
                           
                             }
                             else if con.discount_type == "P".to_string() {
                               //  println!("type match with P");
                             line_item_discount_amount = con.discount_value * line_cost  * 0.01; 
-                            if line_item_discount_amount>con.discount_max_value {
-                                line_item_discount_amount = con.discount_max_value;
+                            if line_item_discount_amount> (con.discount_max_value * currencyRate) {
+                                line_item_discount_amount = con.discount_max_value * currencyRate;
                                }   
                             }
-                            // else
-                            // {
-                            //     let rounded_discount=
-                            // }
+                            else
+                            {
+                                let Price_of_single_variant = ((line_cost) / quantity as f64);
+                                let Single_variant_discount= Price_of_single_variant - (con.discount_value * currencyRate);
+                                line_item_discount_amount = Single_variant_discount * quantity as f64;
+                                if line_item_discount_amount > (con.discount_max_value * currencyRate) {
+                                    line_item_discount_amount = con.discount_max_value * currencyRate;
+                                   } 
+                            }
                          }
                          }
 
@@ -148,7 +153,7 @@ fn function(input: Input) -> Result<Output> {
         }
     }
    
-    total_discount_amount=total_discount_amount*currencyRate;
+    //total_discount_amount=total_discount_amount*currencyR;
     let targets = vec![Target {
         orderSubtotal: OrderSubtotal {
             excludedVariantIds: vec![],
