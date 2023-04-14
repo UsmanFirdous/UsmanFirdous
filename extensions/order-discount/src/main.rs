@@ -109,7 +109,7 @@ fn function(input: Input) -> Result<Output> {
                 let mut line_item_discount_amount = 0.0;
                 if let Some(merchandise) = &line.merchandise {
                     if let Some(metafield) = &merchandise.metafield {
-                        if let Some(metafield_value) = &metafield.value {
+                        if let Some(metafield_value) = metafield.value.as_ref().filter(|&value| value != "null") {
                             // let json_string = serde_json::to_string_pretty(&metafield_value).unwrap();
                             // eprintln!("variants metafield_value: {}", json_string);  
                         let parsed_value: Vec<Condition> = serde_json::from_str(&metafield_value).unwrap();
@@ -135,7 +135,7 @@ fn function(input: Input) -> Result<Output> {
                             }
                             else
                             {
-                                let Price_of_single_variant = ((line_cost) / quantity as f64);
+                                let Price_of_single_variant = (line_cost) / quantity as f64;
                                 let Single_variant_discount= Price_of_single_variant - (con.discount_value * currencyRate);
                                 line_item_discount_amount = Single_variant_discount * quantity as f64;
                                 if line_item_discount_amount > (con.discount_max_value * currencyRate) {
@@ -146,7 +146,8 @@ fn function(input: Input) -> Result<Output> {
                          }
 
                         total_discount_amount = total_discount_amount + line_item_discount_amount;
-                   }
+                
+                  }
                   }
                 }
             }   
@@ -159,7 +160,7 @@ fn function(input: Input) -> Result<Output> {
             excludedVariantIds: vec![],
         },
     }];
-    let message = String::from("Bevy Discount Test");
+    let message = String::from("Bevy Discount");
     let output = Output {
         discountApplicationStrategy: String::from("FIRST"),
         discounts: vec![Discount {
