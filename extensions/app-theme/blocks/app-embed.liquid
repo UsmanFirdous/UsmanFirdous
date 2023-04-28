@@ -1,0 +1,191 @@
+
+
+<script>
+//Identify cart item change
+const listenToCartChange = function (ns, fetch) {
+    if (typeof fetch !== "function") return;
+    ns.fetch = function () {
+      const response = fetch.apply(this, arguments);
+      response.then((res) => {
+        const isCartChanging =
+          /\/cart\/add|\/cart\/update|\/cart\/change|\/cart\/clear|\/cart\/add.js|\/cart\/update.js|\/cart\/change.js|\/cart\/clear.js/.test(
+            res.url.toString()
+          );
+        if (isCartChanging) {
+          setTimeout(changeCartPrice, 500)
+        }
+      });
+      return response;
+    };
+};
+</script>
+
+<script>
+  const rules = [];
+  const actualLinePrices = [];
+  const price = [];
+  {% for item in cart.items %}
+  {% if item.variant.metafields.volume-discount.function-configuration %}
+  rules[{{ item.id }}] = JSON.parse(JSON.stringify({{ item.variant.metafields.volume-discount.function-configuration }}));
+  actualLinePrices[{{ item.id }}] = {{ item.price }};
+  price[{{ item.id }}] = {{ item.final_line_price }}
+  {% endif %}
+  {% endfor %}
+</script>
+
+<script>
+
+ function changeCartPrice(){
+
+    const price = [];
+    {% for item in cart.items %} 
+    price[{{ item.id }}] = {{ item.final_line_price }}
+    {% endfor %}
+
+    let cartItems = document.querySelectorAll(".cart-item");
+    let l=0, cart_item=0,q=0,s=0;
+    let cartTrack=0;
+    let checkElement= document.querySelectorAll('.cart-item__totals');
+    let price_wrappper=document.getElementsByClassName("cart-item__price-wrapper");
+    let itemTotal=document.getElementsByClassName("cart-item__totals");
+    //console.log("Helloooooooo", checkElement.length, cartItems.length,price_wrappper.length);
+    cart_item=checkElement.length/cartItems.length;
+    price_wrappper=price_wrappper.length/cartItems.length;
+    itemTotal=itemTotal.length/cartItems.length;
+    for(let j=0;j<cartItems.length;j++){
+      item=cartItems[j];
+      //console.log("Item", item);
+      let quanitityInput = document.querySelectorAll('.quantity__input')
+      quanitityInput = quanitityInput[j].getAttribute('data-quantity-variant-id');
+
+      console.log("JHVjhvj000", rules[quanitityInput],price[quanitityInput]/100);
+
+      // calculate discount based on the rules.
+      if(rules[quanitityInput])
+      {
+        let quantity1=document.querySelectorAll('.quantity__input');
+        quantity1=quantity1[j].getAttribute('value');
+        rules[quanitityInput].sort((a, b) => b.quantity - a.quantity);
+        console.log("Quantity",quanitityInput,rules[quanitityInput]);
+        let x=rules[quanitityInput];
+        //console.log("cartTrackwww", cartTrack);
+        let originalPrice=price[quanitityInput]/100;
+        
+        for(let i=0;i<x.length;i++)
+        {
+          if(quantity1>=x[i].quantity)
+          {
+            let discountPrice=x[i].discount_value;
+            //console.log("Discount Price", discountPrice);
+
+            function removeAllChildNodes(parent) {
+                while (parent.firstChild) {
+                    parent.removeChild(parent.firstChild);
+                }
+            }
+
+            //console.log("LLLLLLLLLL",l);
+
+            for(let r=0;r<cart_item;r++)
+            {
+              let test=document.querySelectorAll('.cart-item__totals')[q];
+              removeAllChildNodes(test);
+              q++;
+            }
+
+            
+
+            originalPrice=originalPrice.trim();
+            //console.log("originalPriceeeee000", originalPrice);
+
+            let a="";
+            let b="";
+            let flag=0;
+
+            for(let k=0;k<originalPrice.length;k++)
+            {
+              if(originalPrice[k]==" ") break;
+              a+=originalPrice[k];
+            }
+
+            for(let k=1;k<originalPrice.length;k++)
+            {
+              if(originalPrice[k-1]==" ") flag=1;
+              if(flag==1 && originalPrice[k]!=",") b+=originalPrice[k];
+            }
+
+            //console.log("A", a, b);
+
+            let p;
+            p=parseFloat(b);
+           // console.log("TTTTT000",p);
+
+            //console.log("Prices",p, discountPrice, quantity1,p-discountPrice);
+
+            if(x[i].discount_type== 'F') discountPrice=p-discountPrice;
+            else if(x[i].discount_type== 'P') discountPrice=p-((p*x[i].discount_value)/100);
+            else {
+              discountPrice=(quantity1*discountPrice);
+            }
+
+            if(p-discountPrice>x[i].discount_max_value && x[i].discount_max_value!=0) discountPrice=p-x[i].discount_max_value;
+            
+            console.log("Finallllll", discountPrice);
+
+            discountPrice=discountPrice.toFixed(2);
+
+            discountPrice=a + " " + discountPrice;
+
+            let span2=document.createElement("DEL");
+            span2.innerText = originalPrice;
+
+            let break1=document.createElement("br")
+            
+            let span1=document.createElement("span");
+            span1.innerText = discountPrice;
+
+            for(let r=0;r<itemTotal;r++)
+            {
+              let target1=document.getElementsByClassName("cart-item__totals")[s];
+              target1.appendChild(span2);
+              target1.appendChild(break1);
+              target1.appendChild(span1);
+              s++;
+            }
+
+            break;
+          }
+        }
+      }
+      else{
+        cartTrack+=price_wrappper;
+        q+=cart_item;
+        s+=itemTotal;
+      }
+
+      // strikeout the original price.
+      // append the new price in front of striked out price.
+      }
+ }
+ listenToCartChange(window, window.fetch);
+  window.onload = () => {
+    changeCartPrice();
+  }
+</script>
+
+<div class='bsr_countdown' id="bsr_countdown"></div>
+<script> var bsrCurrentVariant = {{ product.selected_or_first_available_variant| json }}; window.bsr_clock_design = {{ shop.metafields.bevy_sclock_design.design}}; {% assign key = 'key' %} var bsrMetafield; var bsrAllMetafields = []; {% for i in (0..50) %} {% assign str = key | append: i %} {% if shop.metafields.bevy_sclock[str] != blank %} bsrMetafield = "{{ shop.metafields.bevy_sclock[str]}}"; bsrAllMetafields.push(bsrMetafield); {% endif %} {% endfor %} </script>
+<script>window.bsr_sales_clock_data="",window.bsr_product="",window.bsr_clock_position={top_on_product_div:"bsr_countdown",top_of_cart_div:"bsr_countdown_cart",bottom_of_cart_div:"bsr_countdown_cart"},window.bsr_clock_design=window.bsr_clock_design?.design,window.clock_current_pos=window.bsr_clock_design?.clockPosition,window.activated_store_wide="",window.bsr_month=["January","February","March","April","May","June","July","August","September","October","November","December"],window.bsr_day=["Sunday","Monday","Tuesday","Wednesday","Thursdays","Friday","Saturday"];var bsrLastUrl=location.href;const getCorrectDayHourMinuteSecondsString=(e=0)=>{let t=e/60,r=t/60,n=r/24;return Math.floor(n)>0?Math.floor(n)+" "+bsrNounDay(Math.floor(n)):Math.floor(r)>0?Math.floor(r)+" "+bsrNounHours(Math.floor(r)):Math.floor(t)>0?Math.floor(t)+" "+bsrNounMinutes(Math.floor(t)):Math.floor(e)>0?Math.floor(e)+" "+bsrNounSecond(Math.floor(e)):"0 second"};function bsrReady(e){"complete"===document.readyState||"interactive"===document.readyState?setTimeout(e,1):document.addEventListener("DOMContentLoaded",e)}function getCurrentVariantId(){let e=Object.fromEntries(new URLSearchParams(window.location.search).entries());return void 0!==e.variant&&(window.bsr_current_variant_id=e.variant),bsrCurrentVariant&&(window.bsr_current_variant_id=bsrCurrentVariant.id,bsrCurrentVariant=null),window.bsr_current_variant_id}async function getClockData(){let e=[];console.log("bsrAllMetaFields",bsrAllMetafields),bsrAllMetafields.length>0&&bsrAllMetafields.forEach(t=>{t?.split("&&&").forEach(t=>{let r=t?.split(","),n=r.shift(),o=r.shift(),s=r.shift();e.push({value:r,start_date:o,end_date:s,time_zone:n})})});let t={design:window.bsr_clock_design,storewide:e};return window.bsr_sales_clock_data=t,t}function bsrContainer(){return'<div id="bsr_parent_container" style=\'font-size:100px\'> <div id="bsr_container"> </div> </div>'}function bsrGetDesignValue(e){return""==e||void 0===e?"inherit":e}function bsrInjectFontFamily(e){let t=document.createElement("link");t.rel="stylesheet";let r="";switch(e){case"Roboto":r="https://fonts.googleapis.com/css2?family=Roboto&display=swap";break;case"Lato":r="https://fonts.googleapis.com/css2?family=Lato&display=swap";break;case"Montserrat":r="https://fonts.googleapis.com/css2?family=Montserrat&display=swap";break;case"Roboto Slab":r="https://fonts.googleapis.com/css2?family=Roboto+Slab&display=swap";break;case"Open Sans":r="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"}""!==r&&(t.href=r,document.head.append(t))}function bsrDesighSalesClock(){let e=document.getElementById("bsr_parent_container");if(e){document.getElementById("bsr_container");let t=window.bsr_sales_clock_data?.design?.clockStyle,r=bsrGetDesignValue(t.fontSize)+"px",n=bsrGetDesignValue(t.margin)+"px",o=bsrGetDesignValue(t.padding)+"px",s=bsrGetDesignValue(t.textAlign),a=bsrGetDesignValue(t.borderColor),i=bsrGetDesignValue(t.backgroundColor),l=bsrGetDesignValue(t.color),c=bsrGetDesignValue(t.fontWeight),d=bsrGetDesignValue(t.fontFamily);bsrInjectFontFamily(t.fontFamily),"top_of_cart_div"==window.clock_current_pos&&0==t.margin?e.setAttribute("style",`font-size:${r};color:${l};font-family:${d};
+    border:1px solid ${a};background:${i};font-weight:${c};
+margin:${n}; padding:${o}; text-align:${s};width:calc(100%-${2*t.margin});margin-bottom:10px;`):e.setAttribute("style",`font-size:${r};color:${l};font-family:${d};
+    border:1px solid ${a};background:${i};font-weight:${c};
+margin:${n}; padding:${o}; text-align:${s};width:calc(100%-${2*t.margin});`)}else console.log("could not found parant node")}function bsrPlaceSalesClock(){let e=document.getElementById("bsr_parent_container"),t=bsrContainer();e&&e.remove();let r=document.getElementsByClassName("bevy_sales_clock");if(r&&r.length>0)Array.from(r).forEach(e=>{let t=bsrContainer(),r=document.createElement("div");r.id="bsr_countdown_cart",r.class="bsr_countdown_cart",r.innerHTML=t,e.prepend(r)});else if("top_of_cart_div"==window.clock_current_pos||"top_on_product_div"==window.clock_current_pos){r=document.querySelectorAll("button[type=submit]");let n;for(var o=0;o<r.length;o++)if((n=(n=(n=r[o].textContent||r[o].innerText).trim().toString()).toLowerCase()).includes("add to cart")){n=r[o];break}let s=document.querySelector(".product-single__title")||document.querySelector(".product__title.cust-sm-hide")||document.querySelector(".product__title")||document.querySelector('h1[itemprop="name"]'),a=document.createElement("div");a.id="bsr_countdown_cart";let i=s&&s.parentElement;"top_of_cart_div"==window.clock_current_pos?n.parentNode.insertBefore(a,n):i?i.prepend(a,i.firstChild):s?s.prepend(a):console.log("No point found to add Store Wide Sale Clock"),document.getElementById("bsr_countdown_cart").innerHTML=t}}async function bsrSalesClockStart(){await getClockData(),await getCurrentVariantId(),bsrDrawClock()}function bsrDetermineVisibility(){if(!window.bsr_clock_design.clockToggle)return!1;let e=getCurrentVariantId();for(let t=0;t<window.bsr_sales_clock_data.storewide.length;t++)if(window.bsr_sales_clock_data.storewide[t].value.toString().includes(e))return window.activated_store_wide=window.bsr_sales_clock_data.storewide[t],!0;return!1}function formatAMPM(e){let t=e.getHours(),r=e.getMinutes(),n=e.getSeconds();0==n&&(n="00");let o=t>=12?"PM":"AM";return t%=12,(t=t||12)+":"+(r=r<10?"0"+r:r)+":"+n+" "+o}function bsrNounHours(e){return e>1?" hours":" hour"}function bsrNounMinutes(e){return e>1?" minutes":" minute"}function bsrNounSecond(e){return e>1?" seconds":" second"}function bsrNounDay(e){return e>1?" days":" day"}function bsrPutContent(){let e=bsrGetTimeDifferenceInSec(),t=window.bsr_sales_clock_data?.design.clockType,r=new Date(window.bsr_sales_end_data_string),n=window.bsr_month[r.getMonth()],o=window.bsr_day[r.getDay()],s=(e%60).toFixed(0),a=Math.floor(e/60),i=0,l=0,c=0;s>59&&(a=Math.floor(s/60)),a>59&&(i=Math.floor(a/60),a%=60),l=Math.floor(i/24),c=(i%24).toFixed(0),a<10&&(a="0"+a),s<10&&(s="0"+s),s>59&&(s="00");let d;"0"==t?d=`Sale ends in ${l}${bsrNounDay(l)} ${c}${bsrNounHours(c)} ${a}${bsrNounMinutes(a)} ${s}${bsrNounSecond(s)}  `:"1"==t?d=`Sale ends in ${getCorrectDayHourMinuteSecondsString(e)} `:"2"==t?d=`On Sale until ${o}, ${n} ${r.getDate()}, ${r.getFullYear()}, ${formatAMPM(r)} `:"3"==t?d=`On Sale until ${o}, ${n} ${r.getDate()}, ${r.getFullYear()}`:"4"==t?d=`On Sale until ${n.substring(0,3)} ${r.getDate()}, ${r.getFullYear()}, ${formatAMPM(r)} `:"5"==t?d=`On Sale until ${n.substring(0,3)} ${r.getDate()}, ${r.getFullYear()} `:"6"==t?d=`Sale ends in ${i}:${a}:${s}`:"7"==t?d=`Deal ends in ${l}d:${c}h:${a}m:${s}s `:"8"==t&&(d=`Sale ends in ${i}${bsrNounHours(i)} ${a}${bsrNounMinutes(a)} ${s}${bsrNounSecond(s)}`);let u=document.getElementById("bsr_container");u?u.innerHTML=d:console.log("cantainer not found")}function bsrDrawClock(){let e=bsrDetermineVisibility(),t=bsrGetTimeDifferenceInSec();if(!e){let r=document.getElementById("bsr_parent_container");return r&&r.remove(),""}t>0&&(bsrPlaceSalesClock(),bsrDesighSalesClock(),bsrPutContent(),setInterval(()=>{if((t=bsrGetTimeDifferenceInSec())>0)bsrPutContent();else{let e=document.getElementById("bsr_parent_container");return e&&e.remove(),""}},1e3))}function bsrGetEndTime(){let e=window.activated_store_wide.end_date;if(!e)return null;{let t=e?.split("T"),r=t[0].replaceAll("-","/"),n=t[1]?.split(".")[0],o,s=Intl.DateTimeFormat("en-GB",{timeZone:window.activated_store_wide.time_zone,timeZoneName:"short"}).format(new Date)?.split(",")[1]?.split("GMT")[1];return new Date(r+" "+n+" GMT"+s)}}function bsrGetTimeDifferenceInSec(){let e=bsrGetEndTime(),t=new Date,r;return r=e?e-t:t,window.bsr_remaining_sec=r/1e3,e&&(window.bsr_sales_end_data_string=e.toString()),window.bsr_remaining_sec}function onUrlChange(){bsrDrawClock()}bsrReady(async function(){bsrSalesClockStart()}),new MutationObserver(()=>{let e=location.href;e!==bsrLastUrl&&(bsrLastUrl=e,onUrlChange())}).observe(document,{subtree:!0,childList:!0});</script>
+
+
+{% schema %}
+  {
+    "name": "Bevy Sales Rules",
+    "target": "body",
+    "settings": []
+  }
+{% endschema %}

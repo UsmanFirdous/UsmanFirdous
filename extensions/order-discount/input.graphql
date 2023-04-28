@@ -12,7 +12,7 @@ query Input {
         __typename
         ...on ProductVariant {
             id
-            metafield(namespace: "Volume Discount", key: "function-configuration")
+            metafield(namespace: "volume-discount", key: "function-configuration")
             {
               value
             }
