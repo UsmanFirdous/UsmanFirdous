@@ -129,7 +129,8 @@ fn function(input: Input) -> Result<Output> {
                             else if con.discount_type == "P".to_string() {
                               //  println!("type match with P");
                             line_item_discount_amount = con.discount_value * line_cost  * 0.01; 
-                            if line_item_discount_amount> (con.discount_max_value * currencyRate) {
+
+                            if con.discount_max_value > 0.0 && line_item_discount_amount> (con.discount_max_value * currencyRate)  {
                                 line_item_discount_amount = con.discount_max_value * currencyRate;
                                }   
                             }
@@ -138,7 +139,7 @@ fn function(input: Input) -> Result<Output> {
                                 let Price_of_single_variant = (line_cost) / quantity as f64;
                                 let Single_variant_discount= Price_of_single_variant - (con.discount_value * currencyRate);
                                 line_item_discount_amount = Single_variant_discount * quantity as f64;
-                                if line_item_discount_amount > (con.discount_max_value * currencyRate) {
+                                if con.discount_max_value > 0.0 && line_item_discount_amount > (con.discount_max_value * currencyRate) {
                                     line_item_discount_amount = con.discount_max_value * currencyRate;
                                    } 
                             }

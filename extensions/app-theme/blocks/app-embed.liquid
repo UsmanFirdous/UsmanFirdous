@@ -23,14 +23,62 @@ const listenToCartChange = function (ns, fetch) {
 <script>
   const rules = [];
   const actualLinePrices = [];
-  const price = [];
   {% for item in cart.items %}
   {% if item.variant.metafields.volume-discount.function-configuration %}
   rules[{{ item.id }}] = JSON.parse(JSON.stringify({{ item.variant.metafields.volume-discount.function-configuration }}));
   actualLinePrices[{{ item.id }}] = {{ item.price }};
-  price[{{ item.id }}] = {{ item.final_line_price }}
   {% endif %}
   {% endfor %}
+</script>
+
+<script>
+
+{% assign variant = product.selected_or_first_available_variant %}
+console.log("Variant1", `{{ variant }}`);
+{%- assign rules = variant.metafields.volume-discount.function-configuration.value -%}
+console.log("Rules12", `{{ rules }}`)
+
+function addTable(){
+  let x=`<table>
+    <thead>
+      <tr>
+        <td>Quantity</td>
+        <td>Value</td>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for rule in rules -%}
+        <tr>
+          <td>{{ rule.quantity }} or more</td>
+          <td>
+            {% if rule.discount_type == "F" %}
+              {{ rule.discount_value | times: 100 | money_with_currency }} off
+            {% endif %}
+            {% if rule.discount_type == "P" %}
+                {{ rule.discount_value }}% off 
+            {% endif %}
+            {% if rule.discount_type == "R" %}
+                Price for each quantity will be {{ rule.discount_value | times: 100  | money_with_currency }}
+            {% endif %}
+            </td>
+          </td>
+        </tr>
+      {%- endfor -%}
+    </tbody>
+  </table>`
+  var div5 = document.createElement("div");
+  div5.innerHTML = x.trim();
+  return div5.firstChild;
+}
+
+{% if rules.size>0 %}
+  let tab1=addTable();
+  console.log("Tab", tab1);
+  const productdes=document.querySelectorAll('.product__description')[0];
+  console.log("Hssssss", productdes);
+
+  productdes.appendChild(tab1);
+{% endif %}
 </script>
 
 <script>
@@ -38,27 +86,29 @@ const listenToCartChange = function (ns, fetch) {
  function changeCartPrice(){
 
     const price = [];
+    const variants=[];
+    let x=0;
     {% for item in cart.items %} 
-    price[{{ item.id }}] = {{ item.final_line_price }}
+    price[{{ item.id }}] = {{ item.final_price }}
+    variants[x]={{ item.id }};
+    x++;
     {% endfor %}
 
     let cartItems = document.querySelectorAll(".cart-item");
-    let l=0, cart_item=0,q=0,s=0;
-    let cartTrack=0;
+    let cart_item=0,q=0,s=0;
     let checkElement= document.querySelectorAll('.cart-item__totals');
     let price_wrappper=document.getElementsByClassName("cart-item__price-wrapper");
     let itemTotal=document.getElementsByClassName("cart-item__totals");
-    //console.log("Helloooooooo", checkElement.length, cartItems.length,price_wrappper.length);
+    
     cart_item=checkElement.length/cartItems.length;
     price_wrappper=price_wrappper.length/cartItems.length;
     itemTotal=itemTotal.length/cartItems.length;
+
     for(let j=0;j<cartItems.length;j++){
       item=cartItems[j];
-      //console.log("Item", item);
-      let quanitityInput = document.querySelectorAll('.quantity__input')
-      quanitityInput = quanitityInput[j].getAttribute('data-quantity-variant-id');
+      let quanitityInput=variants[j];
 
-      console.log("JHVjhvj000", rules[quanitityInput],price[quanitityInput]/100);
+      console.log("Rule & Price", rules[quanitityInput],price[quanitityInput]);
 
       // calculate discount based on the rules.
       if(rules[quanitityInput])
@@ -66,17 +116,26 @@ const listenToCartChange = function (ns, fetch) {
         let quantity1=document.querySelectorAll('.quantity__input');
         quantity1=quantity1[j].getAttribute('value');
         rules[quanitityInput].sort((a, b) => b.quantity - a.quantity);
-        console.log("Quantity",quanitityInput,rules[quanitityInput]);
+        console.log("Rules After sort",rules[quanitityInput]);
         let x=rules[quanitityInput];
-        //console.log("cartTrackwww", cartTrack);
-        let originalPrice=price[quanitityInput]/100;
+
+        originalPrice=price[quanitityInput]/100;
+        originalPrice=originalPrice*quantity1;
+       
+        console.log("original Price", originalPrice);
+
+        {% capture currencyString %}{{ shop.money_format }}{% endcapture %}
+        {% assign tempArray = currencyString | split: '{' %}
+        {% assign currencySymbol = tempArray.first %}
+        let symbol=`{{ currencySymbol }}`;
+
         
         for(let i=0;i<x.length;i++)
         {
           if(quantity1>=x[i].quantity)
           {
             let discountPrice=x[i].discount_value;
-            //console.log("Discount Price", discountPrice);
+            console.log("Discount Price", discountPrice);
 
             function removeAllChildNodes(parent) {
                 while (parent.firstChild) {
@@ -84,43 +143,14 @@ const listenToCartChange = function (ns, fetch) {
                 }
             }
 
-            //console.log("LLLLLLLLLL",l);
-
             for(let r=0;r<cart_item;r++)
             {
               let test=document.querySelectorAll('.cart-item__totals')[q];
               removeAllChildNodes(test);
               q++;
             }
-
-            
-
-            originalPrice=originalPrice.trim();
-            //console.log("originalPriceeeee000", originalPrice);
-
-            let a="";
-            let b="";
-            let flag=0;
-
-            for(let k=0;k<originalPrice.length;k++)
-            {
-              if(originalPrice[k]==" ") break;
-              a+=originalPrice[k];
-            }
-
-            for(let k=1;k<originalPrice.length;k++)
-            {
-              if(originalPrice[k-1]==" ") flag=1;
-              if(flag==1 && originalPrice[k]!=",") b+=originalPrice[k];
-            }
-
-            //console.log("A", a, b);
-
-            let p;
-            p=parseFloat(b);
-           // console.log("TTTTT000",p);
-
-            //console.log("Prices",p, discountPrice, quantity1,p-discountPrice);
+           
+            let p=originalPrice;
 
             if(x[i].discount_type== 'F') discountPrice=p-discountPrice;
             else if(x[i].discount_type== 'P') discountPrice=p-((p*x[i].discount_value)/100);
@@ -134,7 +164,15 @@ const listenToCartChange = function (ns, fetch) {
 
             discountPrice=discountPrice.toFixed(2);
 
-            discountPrice=a + " " + discountPrice;
+            {% assign currency2 = cart.currency.symbol %}
+            let cur2=`{{ currency2 }}`;
+
+            if(cur2!=symbol) symbol=symbol+" ";
+
+            discountPrice=symbol + discountPrice;
+
+            originalPrice=originalPrice.toFixed(2);
+            originalPrice=symbol + originalPrice;
 
             let span2=document.createElement("DEL");
             span2.innerText = originalPrice;
@@ -158,7 +196,6 @@ const listenToCartChange = function (ns, fetch) {
         }
       }
       else{
-        cartTrack+=price_wrappper;
         q+=cart_item;
         s+=itemTotal;
       }
