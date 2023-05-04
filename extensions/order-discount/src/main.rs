@@ -102,7 +102,8 @@ fn function(input: Input) -> Result<Output> {
         eprintln!("currency:{}", currencyRate); 
     } 
     // prepare cart_lines for easy usage
-    let mut cart_lines: Vec<ModifiedCartLine> = vec![];
+    // let mut cart_lines: Vec<ModifiedCartLine> = vec![];
+    //let mut excludedVariantIds = vec![];
     if let Some(cart) = input.cart {
         if let Some(lines) = cart.lines {
             for line in lines {
@@ -110,6 +111,7 @@ fn function(input: Input) -> Result<Output> {
                 if let Some(merchandise) = &line.merchandise {
                     if let Some(metafield) = &merchandise.metafield {
                         if let Some(metafield_value) = metafield.value.as_ref().filter(|&value| value != "null") {
+                       //  excludedVariantIds.push(merchandise.id.to_string());
                             // let json_string = serde_json::to_string_pretty(&metafield_value).unwrap();
                             // eprintln!("variants metafield_value: {}", json_string);  
                         let parsed_value: Vec<Condition> = serde_json::from_str(&metafield_value).unwrap();
@@ -154,28 +156,40 @@ fn function(input: Input) -> Result<Output> {
             }   
         }
     }
-   
+   // let joined = excludedVariantIds.join(", ");
+   // eprintln!("excludedVariantIds: {}", joined);
     //total_discount_amount=total_discount_amount*currencyR;
-    let targets = vec![Target {
-        orderSubtotal: OrderSubtotal {
-            excludedVariantIds: vec![],
-        },
-    }];
-    let message = String::from("Bevy Discount");
-    let output = Output {
-        discountApplicationStrategy: String::from("FIRST"),
-        discounts: vec![Discount {
-            value: Value {
-                fixedAmount: FixedAmount {
-                    amount: total_discount_amount,
-                },
+   
+    if total_discount_amount < 0.1 {
+        eprintln!("No cart lines qualify for discount.");
+        let output = Output {
+            discountApplicationStrategy: String::from("FIRST"),
+            discounts: vec![],
+        };
+        Ok(output)
+    }
+    else
+    {
+        let targets = vec![Target {
+            orderSubtotal: OrderSubtotal {
+                excludedVariantIds: vec![],
             },
-            targets: targets,
-            message: message,
-        }],
-    };
-
-    Ok(output)
+        }];
+        let message = String::from("Bulk Discount");
+        let output = Output {
+            discountApplicationStrategy: String::from("FIRST"),
+            discounts: vec![Discount {
+                value: Value {
+                    fixedAmount: FixedAmount {
+                        amount: total_discount_amount,
+                    },
+                },
+                targets: targets,
+                message: message,
+            }],
+        };
+        Ok(output)
+    }
 }
 
 #[cfg(test)]

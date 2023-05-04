@@ -7,12 +7,13 @@ const listenToCartChange = function (ns, fetch) {
     ns.fetch = function () {
       const response = fetch.apply(this, arguments);
       response.then((res) => {
+       
         const isCartChanging =
           /\/cart\/add|\/cart\/update|\/cart\/change|\/cart\/clear|\/cart\/add.js|\/cart\/update.js|\/cart\/change.js|\/cart\/clear.js/.test(
             res.url.toString()
           );
         if (isCartChanging) {
-          setTimeout(changeCartPrice, 500)
+          setTimeout(()=>{changeCartPrice(true);} , 500)
         }
       });
       return response;
@@ -21,18 +22,7 @@ const listenToCartChange = function (ns, fetch) {
 </script>
 
 <script>
-  const rules = [];
-  const actualLinePrices = [];
-  {% for item in cart.items %}
-  {% if item.variant.metafields.volume-discount.function-configuration %}
-  rules[{{ item.id }}] = JSON.parse(JSON.stringify({{ item.variant.metafields.volume-discount.function-configuration }}));
-  actualLinePrices[{{ item.id }}] = {{ item.price }};
-  {% endif %}
-  {% endfor %}
-</script>
-
-<script>
-
+//Code for adding discount table on product page
 {% assign variant = product.selected_or_first_available_variant %}
 console.log("Variant1", `{{ variant }}`);
 {%- assign rules = variant.metafields.volume-discount.function-configuration.value -%}
@@ -73,40 +63,90 @@ function addTable(){
 
 {% if rules.size>0 %}
   let tab1=addTable();
-  console.log("Tab", tab1);
   const productdes=document.querySelectorAll('.product__description')[0];
-  console.log("Hssssss", productdes);
 
-  productdes.appendChild(tab1);
+  productdes.insertBefore(tab1, productdes.firstChild);
 {% endif %}
 </script>
 
 <script>
 
- function changeCartPrice(){
+  //Adding rules and line prices here
+
+    const rules = [];
+    const actualLinePrices = [];
+    {% for item in cart.items %}
+    {% if item.variant.metafields.volume-discount.function-configuration %}
+    rules[{{ item.id }}] = JSON.parse(JSON.stringify({{ item.variant.metafields.volume-discount.function-configuration }}));
+    actualLinePrices[{{ item.id }}] = {{ item.price }};
+    {% endif %}
+    {% endfor %}
+
+</script>
+
+
+
+<script>
+let cartData1;
+ async function changeCartPrice(bol){
 
     const price = [];
     const variants=[];
     let x=0;
-    {% for item in cart.items %} 
-    price[{{ item.id }}] = {{ item.final_price }}
-    variants[x]={{ item.id }};
-    x++;
-    {% endfor %}
 
-    let cartItems = document.querySelectorAll(".cart-item");
-    let cart_item=0,q=0,s=0;
+    await fetch("/cart.js", {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => {
+      return res.json();
+    })
+    .then(async (cartData) => {
+      console.log("Cart Data",cartData.items);
+
+      console.log("CartData1", cartData1);
+
+      if(!cartData1) cartData1=cartData;
+      else {
+        console.log("Length of cart", cartData1.items.length, cartData.items.length)
+        if(cartData1.items.length!=cartData.items.length){
+          if(bol && location.href.includes("/cart")==false) {
+            if(document.querySelectorAll(".cart-item").length) location.reload();
+          }
+        }
+      }
+      
+      let y=cartData.items;
+
+      for(let x=0;x<cartData.items.length;x++){
+        price[y[x].variant_id]=y[x].final_price;
+        variants[x]=y[x].variant_id;
+      }
+
+
+    });
+
+    if(document.querySelectorAll(".cart-item").length!=variants.length && location.href.includes("/cart")) { console.log("Return"); return; }
+
+    let cart_item=0,q=0,s1=0;
     let checkElement= document.querySelectorAll('.cart-item__totals');
     let price_wrappper=document.getElementsByClassName("cart-item__price-wrapper");
     let itemTotal=document.getElementsByClassName("cart-item__totals");
-    
-    cart_item=checkElement.length/cartItems.length;
-    price_wrappper=price_wrappper.length/cartItems.length;
-    itemTotal=itemTotal.length/cartItems.length;
 
-    for(let j=0;j<cartItems.length;j++){
-      item=cartItems[j];
+    console.log("Length of itemTotal and Price", itemTotal.length, variants.length);
+    
+    cart_item=checkElement.length/variants.length;
+    price_wrappper=price_wrappper.length/variants.length;
+    itemTotal=itemTotal.length/variants.length;
+
+    console.log("Item Total", itemTotal);
+
+    for(let j=0;j<variants.length;j++){
       let quanitityInput=variants[j];
+      console.log("quanitityInput", quanitityInput);
 
       console.log("Rule & Price", rules[quanitityInput],price[quanitityInput]);
 
@@ -114,9 +154,9 @@ function addTable(){
       if(rules[quanitityInput])
       {
         let quantity1=document.querySelectorAll('.quantity__input');
-        quantity1=quantity1[j].getAttribute('value');
+        quantity1=quantity1[j]?.getAttribute('value');
         rules[quanitityInput].sort((a, b) => b.quantity - a.quantity);
-        console.log("Rules After sort",rules[quanitityInput]);
+        //console.log("Rules After sorting123",rules[quanitityInput]);
         let x=rules[quanitityInput];
 
         originalPrice=price[quanitityInput]/100;
@@ -129,11 +169,14 @@ function addTable(){
         {% assign currencySymbol = tempArray.first %}
         let symbol=`{{ currencySymbol }}`;
 
+        let flag=0;
+
         
         for(let i=0;i<x.length;i++)
         {
           if(quantity1>=x[i].quantity)
           {
+            flag=1;
             let discountPrice=x[i].discount_value;
             console.log("Discount Price", discountPrice);
 
@@ -145,6 +188,7 @@ function addTable(){
 
             for(let r=0;r<cart_item;r++)
             {
+              console.log("Remove Item", r, q);
               let test=document.querySelectorAll('.cart-item__totals')[q];
               removeAllChildNodes(test);
               q++;
@@ -160,7 +204,7 @@ function addTable(){
 
             if(p-discountPrice>x[i].discount_max_value && x[i].discount_max_value!=0) discountPrice=p-x[i].discount_max_value;
             
-            console.log("Finallllll", discountPrice);
+            console.log("Final Priceeeeeee", discountPrice,s1);
 
             discountPrice=discountPrice.toFixed(2);
 
@@ -174,30 +218,44 @@ function addTable(){
             originalPrice=originalPrice.toFixed(2);
             originalPrice=symbol + originalPrice;
 
-            let span2=document.createElement("DEL");
-            span2.innerText = originalPrice;
-
-            let break1=document.createElement("br")
-            
-            let span1=document.createElement("span");
-            span1.innerText = discountPrice;
-
             for(let r=0;r<itemTotal;r++)
             {
-              let target1=document.getElementsByClassName("cart-item__totals")[s];
-              target1.appendChild(span2);
-              target1.appendChild(break1);
-              target1.appendChild(span1);
-              s++;
+              let span2=document.createElement("DEL");
+              span2.innerText = originalPrice;
+
+              let break1=document.createElement("br")
+              
+              let span1=document.createElement("span");
+              span1.innerText = discountPrice;
+
+              let span3=document.createElement("span");
+              span3.appendChild(span2);
+              span3.appendChild(break1);
+              span3.appendChild(span1);
+              span3.classList.add("price");
+              span3.classList.add("price--end");
+
+              let div2=document.createElement("div");
+              div2.appendChild(span3);
+              div2.classList.add("cart-item__price-wrapper");
+
+              let target1=document.getElementsByClassName("cart-item__totals")[s1];
+              //target1.classList.remove("small-hide");
+              target1.appendChild(div2);
+              s1++;
             }
 
             break;
-          }
+          } 
+        }
+        if(flag==0){
+          q+=cart_item;
+          s1+=itemTotal;
         }
       }
       else{
         q+=cart_item;
-        s+=itemTotal;
+        s1+=itemTotal;
       }
 
       // strikeout the original price.
@@ -206,7 +264,7 @@ function addTable(){
  }
  listenToCartChange(window, window.fetch);
   window.onload = () => {
-    changeCartPrice();
+    changeCartPrice(false);
   }
 </script>
 
