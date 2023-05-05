@@ -125,7 +125,7 @@ fn function(input: Input) -> Result<Output> {
                             if con.discount_type == "F".to_string() {
                               //  println!("type match with F");
                             // eprintln!("discount_value{}", con.discount_value);    
-                           line_item_discount_amount = con.discount_value * currencyRate;
+                             line_item_discount_amount = con.discount_value * currencyRate * quantity as f64;
                           
                             }
                             else if con.discount_type == "P".to_string() {
