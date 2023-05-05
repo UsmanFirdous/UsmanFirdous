@@ -22,40 +22,72 @@ const listenToCartChange = function (ns, fetch) {
 </script>
 
 <script>
+let xy=[];
 //Code for adding discount table on product page
 {% assign variant = product.selected_or_first_available_variant %}
-console.log("Variant1", `{{ variant }}`);
+console.log("Variant1", `{{ variant.price | divided_by: 100.00 }}`);
 {%- assign rules = variant.metafields.volume-discount.function-configuration.value -%}
 console.log("Rules12", `{{ rules }}`)
+let x={{ variant.price | divided_by: 100.00 }};
+console.log("X1", x);
+{%- for rule in rules -%}
+       
+    {% if rule.discount_type == "F" %}
+      x={{ variant.price | divided_by: 100.00 }} - {{ rule.discount_value }};
+      console.log("X2",x.toFixed(2));
+      xy[0]=x.toFixed(2);
+    {% endif %}
+    {% if rule.discount_type == "P" %}
+      x={{ variant.price | divided_by: 100.00 }} - ({{ variant.price | divided_by: 100.00 }}*{{ rule.discount_value }})/100;
+      console.log("X3",x.toFixed(2));
+      xy[1]=x.toFixed(2);
+    {% endif %}
+    {% if rule.discount_type == "R" %}
+      x={{ rule.discount_value }}
+      console.log("X4",x.toFixed(2));
+      xy[2]=x.toFixed(2);
+    {% endif %}
+    
+{%- endfor -%}
+
+{% capture currencyString %}
+  {{ shop.money_format }}
+{% endcapture %}
+{% assign tempArray = currencyString | split: '{' %}
+{% assign currencySymbol = tempArray.first %}
 
 function addTable(){
-  let x=`<table>
-    <thead>
-      <tr>
-        <td>Quantity</td>
-        <td>Value</td>
+  let v=0;
+  let x=`<div id="table-div">
+  <p id="custom-txt">Buy More, Save More!</p>
+  <table class="cus-table border-cus">
+    <thead bgcolor="#E0E4FF">
+      <tr class="border-cus">
+        <th class="cus-table cus-pad">Quantity</th>
+        <th class="cus-table cus-pad">Price Per Item</th>
       </tr>
     </thead>
     <tbody>
       {%- for rule in rules -%}
-        <tr>
-          <td>{{ rule.quantity }} or more</td>
-          <td>
+        <tr class="cus-table-row border-cus"">
+          <td class="cus-table cus-pad">{{ rule.quantity }}+</td>
+          <td class="cus-table cus-pad">
             {% if rule.discount_type == "F" %}
-              {{ rule.discount_value | times: 100 | money_with_currency }} off
+              {{ currencySymbol }}${xy[0]}
             {% endif %}
             {% if rule.discount_type == "P" %}
-                {{ rule.discount_value }}% off 
+                {{ currencySymbol }}${xy[1]}
             {% endif %}
             {% if rule.discount_type == "R" %}
-                Price for each quantity will be {{ rule.discount_value | times: 100  | money_with_currency }}
+              {{ currencySymbol }}${xy[2]}
             {% endif %}
-            </td>
           </td>
         </tr>
       {%- endfor -%}
     </tbody>
-  </table>`
+  </table>
+  <p id="cus-seemore"><a href="" id="cus-link">See More</a></p>
+  </div>`
   var div5 = document.createElement("div");
   div5.innerHTML = x.trim();
   return div5.firstChild;
@@ -66,6 +98,46 @@ function addTable(){
   const productdes=document.querySelectorAll('.product__description')[0];
 
   productdes.insertBefore(tab1, productdes.firstChild);
+
+  document.getElementById("table-div").style.width="fit-content";
+  document.getElementById("table-div").style.color="#081E57";
+  document.getElementById("table-div").style.fontSize="14px";
+  document.getElementById("custom-txt").style.fontWeight="600";
+  document.getElementById("custom-txt").style.fontSize="14px";
+  document.getElementById("cus-seemore").style.textAlign="center";
+  document.getElementById("cus-link").style.color="#4765F0";
+  document.getElementById("cus-link").style.fontSize="13px";
+  
+  let rows=document.querySelectorAll('.cus-table-row');
+  for(let q=0;q<rows.length;q++)
+  {
+    if(q%2==0) rows[q].style.backgroundColor="#F6F6F6";
+    else rows[q].style.backgroundColor="#FFFFFF"
+  }
+
+  let brdr=document.querySelectorAll(".cus-table");
+
+  for(let q=0;q<brdr.length;q++)
+  {
+    brdr[q].style.border="none";
+    brdr[q].style.borderCollapse = "collapse";
+  }
+
+  let brdr1=document.querySelectorAll(".border-cus");
+
+  for(let q=0;q<brdr1.length;q++)
+  {
+    brdr1[q].style.border="1px solid #CED4DA";
+  }
+
+
+  let pad=document.querySelectorAll(".cus-pad");
+
+  for(let q=0;q<pad.length;q++)
+  {
+    brdr[q].style.padding="8px 80px 8px 15px";
+  }
+
 {% endif %}
 </script>
 
