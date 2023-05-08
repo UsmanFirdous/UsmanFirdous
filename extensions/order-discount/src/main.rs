@@ -38,7 +38,8 @@ struct Condition {
     quantity: i64,
     discount_value: f64,
     discount_type: String,
-    discount_max_value: f64
+    discount_max_value: f64,
+    discount_max_value_type: String,
 }
 #[derive(Deserialize, Serialize)]
 struct CartLineCost {
@@ -130,20 +131,38 @@ fn function(input: Input) -> Result<Output> {
                             }
                             else if con.discount_type == "P".to_string() {
                               //  println!("type match with P");
-                            line_item_discount_amount = con.discount_value * line_cost  * 0.01; 
-
-                            if con.discount_max_value > 0.0 && line_item_discount_amount> (con.discount_max_value * currencyRate)  {
-                                line_item_discount_amount = con.discount_max_value * currencyRate;
-                               }   
+                                line_item_discount_amount = con.discount_value * line_cost  * 0.01; 
+                                if con.discount_max_value_type == "P".to_string(){
+                                    if con.discount_max_value > 0.0 && con.discount_value > con.discount_max_value  {
+                                    line_item_discount_amount = con.discount_max_value * line_cost  * 0.01; 
+                                    }
+                                }
+                                else
+                                {
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount> (con.discount_max_value * currencyRate)  {
+                                        line_item_discount_amount = con.discount_max_value * currencyRate;
+                                    }  
+                                }
+                             
                             }
                             else
                             {
                                 let Price_of_single_variant = (line_cost) / quantity as f64;
                                 let Single_variant_discount= Price_of_single_variant - (con.discount_value * currencyRate);
                                 line_item_discount_amount = Single_variant_discount * quantity as f64;
-                                if con.discount_max_value > 0.0 && line_item_discount_amount > (con.discount_max_value * currencyRate) {
-                                    line_item_discount_amount = con.discount_max_value * currencyRate;
-                                   } 
+                                if con.discount_max_value_type == "P".to_string(){
+                                   let max_percentage = con.discount_max_value * Price_of_single_variant  * 0.01; 
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > max_percentage  {
+                                    line_item_discount_amount = con.discount_max_value * line_cost  * 0.01; 
+                                    }
+                                }
+                                else
+                                {
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount> (con.discount_max_value * currencyRate)  {
+                                        line_item_discount_amount = con.discount_max_value * currencyRate;
+                                       }  
+                                }
+
                             }
                          }
                          }
