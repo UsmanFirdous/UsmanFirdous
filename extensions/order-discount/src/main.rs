@@ -126,20 +126,35 @@ fn function(input: Input) -> Result<Output> {
                             if con.discount_type == "F".to_string() {
                               //  println!("type match with F");
                             // eprintln!("discount_value{}", con.discount_value);    
-                             line_item_discount_amount = con.discount_value * currencyRate * quantity as f64;
-                          
-                            }
-                            else if con.discount_type == "P".to_string() {
-                              //  println!("type match with P");
-                                line_item_discount_amount = con.discount_value * line_cost  * 0.01; 
-                                if con.discount_max_value_type == "P".to_string(){
-                                    if con.discount_max_value > 0.0 && con.discount_value > con.discount_max_value  {
-                                    line_item_discount_amount = con.discount_max_value * line_cost  * 0.01; 
+                                line_item_discount_amount = con.discount_value * currencyRate * quantity as f64;
+                                if con.discount_max_value_type == "P".to_string() {
+                                    let Price_of_single_variant = (line_cost) / quantity as f64;
+                                    let max_discount_value = con.discount_max_value * Price_of_single_variant  * 0.01;
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > max_discount_value  {
+                                    line_item_discount_amount =  max_discount_value;
                                     }
                                 }
                                 else
                                 {
-                                    if con.discount_max_value > 0.0 && line_item_discount_amount> (con.discount_max_value * currencyRate)  {
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > con.discount_max_value  {
+                                        line_item_discount_amount = con.discount_max_value * currencyRate;
+                                    }  
+                                }
+
+                            }
+                            else if con.discount_type == "P".to_string() {
+                              //  println!("type match with P");
+                                line_item_discount_amount = con.discount_value * line_cost  * 0.01;
+                                if con.discount_max_value_type == "P".to_string() {
+                                    let Price_of_single_variant = (line_cost) / quantity as f64;
+                                    let max_discount_value = con.discount_max_value * Price_of_single_variant  * 0.01;
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > max_discount_value  {
+                                    line_item_discount_amount =  max_discount_value;
+                                    }
+                                }
+                                else
+                                {
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > con.discount_max_value  {
                                         line_item_discount_amount = con.discount_max_value * currencyRate;
                                     }  
                                 }
@@ -150,17 +165,17 @@ fn function(input: Input) -> Result<Output> {
                                 let Price_of_single_variant = (line_cost) / quantity as f64;
                                 let Single_variant_discount= Price_of_single_variant - (con.discount_value * currencyRate);
                                 line_item_discount_amount = Single_variant_discount * quantity as f64;
-                                if con.discount_max_value_type == "P".to_string(){
-                                   let max_percentage = con.discount_max_value * Price_of_single_variant  * 0.01; 
-                                    if con.discount_max_value > 0.0 && line_item_discount_amount > max_percentage  {
-                                    line_item_discount_amount = con.discount_max_value * line_cost  * 0.01; 
+                                if con.discount_max_value_type == "P".to_string() {
+                                    let max_discount_value = con.discount_max_value * Price_of_single_variant  * 0.01;
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > max_discount_value  {
+                                    line_item_discount_amount =  max_discount_value;
                                     }
                                 }
                                 else
                                 {
-                                    if con.discount_max_value > 0.0 && line_item_discount_amount> (con.discount_max_value * currencyRate)  {
+                                    if con.discount_max_value > 0.0 && line_item_discount_amount > con.discount_max_value  {
                                         line_item_discount_amount = con.discount_max_value * currencyRate;
-                                       }  
+                                    }  
                                 }
 
                             }
