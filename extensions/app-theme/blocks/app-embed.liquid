@@ -27,24 +27,29 @@ let xy=[];
 {% assign variant = product.selected_or_first_available_variant %}
 console.log("Variant1", `{{ variant.price | divided_by: 100.00 }}`);
 {%- assign rules = variant.metafields.volume-discount.function-configuration.value -%}
-console.log("Rules12", `{{ rules }}`)
+console.log("Rules123", `{{ rules }}`)
 let x={{ variant.price | divided_by: 100.00 }};
+let index=0;
+
 {%- for rule in rules -%}
        
     {% if rule.discount_type == "F" %}
       x={{ variant.price | divided_by: 100.00 }} - {{ rule.discount_value }};
-      xy[0]=x.toFixed(2);
+      xy[index]=x.toFixed(2);
     {% endif %}
     {% if rule.discount_type == "P" %}
       x={{ variant.price | divided_by: 100.00 }} - ({{ variant.price | divided_by: 100.00 }}*{{ rule.discount_value }})/100;
-      xy[1]=x.toFixed(2);
+      xy[index]=x.toFixed(2);
     {% endif %}
     {% if rule.discount_type == "R" %}
       x={{ rule.discount_value }}
-      xy[2]=x.toFixed(2);
+      xy[index]=x.toFixed(2);
     {% endif %}
+    index++;
     
 {%- endfor -%}
+
+console.log("XY", xy);
 
 {% capture currencyString %}
   {{ shop.money_format }}
@@ -64,21 +69,23 @@ function addTable(){
       </tr>
     </thead>
     <tbody>
+      {% assign num = 0 %}
       {%- for rule in rules -%}
         <tr class="cus-table-row border-cus"">
           <td class="cus-table cus-pad">{{ rule.quantity }}+</td>
           <td class="cus-table cus-pad">
             {% if rule.discount_type == "F" %}
-              {{ currencySymbol }}${xy[0]}
+              {{ currencySymbol }}${xy[{{num}}]}
             {% endif %}
             {% if rule.discount_type == "P" %}
-                {{ currencySymbol }}${xy[1]}
+                {{ currencySymbol }}${xy[{{num}}]}
             {% endif %}
             {% if rule.discount_type == "R" %}
-              {{ currencySymbol }}${xy[2]}
+              {{ currencySymbol }}${xy[{{num}}]}
             {% endif %}
           </td>
         </tr>
+         {% assign num = num | plus: 1 %}
       {%- endfor -%}
     </tbody>
   </table>
@@ -131,7 +138,7 @@ function addTable(){
 
   for(let q=0;q<pad.length;q++)
   {
-    pad[q].style.padding="10px 120px 10px 20px";
+    pad[q].style.padding="10px 50px 10px 20px";
   }
 
 {% endif %}
@@ -246,7 +253,7 @@ let cartData1;
           {
             flag=1;
             let discountPrice=x[i].discount_value;
-            //console.log("Discount Price", discountPrice);
+            console.log("Discount Price", discountPrice);
 
             function removeAllChildNodes(parent) {
                 while (parent.firstChild) {
@@ -264,15 +271,25 @@ let cartData1;
            
             let p=originalPrice;
 
-            if(x[i].discount_type== 'F') discountPrice=p-discountPrice;
+            let max_store=x[i].discount_max_value;
+
+            if(x[i].discount_max_value_type=="P") max_store=(p*x[i].discount_max_value)/100;
+
+            console.log("Discount max valie", max_store);
+
+            console.log("Hello", p, discountPrice, quantity1);
+
+            if(x[i].discount_type== 'F') discountPrice=p-(discountPrice*quantity1);
             else if(x[i].discount_type== 'P') discountPrice=p-((p*x[i].discount_value)/100);
             else {
               discountPrice=(quantity1*discountPrice);
             }
 
-            if(p-discountPrice>x[i].discount_max_value && x[i].discount_max_value!=0) discountPrice=p-x[i].discount_max_value;
+            console.log("Discoiunt0000", discountPrice);
+
+            if(p-discountPrice>max_store && x[i].discount_max_value!=0 && x[i].discount_max_value) discountPrice=p-max_store;
             
-            //console.log("Final Priceeeeeee", discountPrice,s1);
+            console.log("Final Pricee", discountPrice);
 
             discountPrice=discountPrice.toFixed(2);
 
