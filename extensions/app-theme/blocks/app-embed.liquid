@@ -22,6 +22,8 @@ const listenToCartChange = function (ns, fetch) {
 </script>
 
 <script>
+let design=JSON.parse(JSON.stringify({{ shop.metafields.bevy_appearance_design.design}}));
+console.log("Design22", design.design);
 let xy=[];
 //Code for adding discount table on product page
 {% assign variant = product.selected_or_first_available_variant %}
@@ -59,9 +61,10 @@ console.log("XY", xy);
 
 function addTable(){
   let v=0;
-  let x=`<div id="table-div">
+  let x=`<div id="bulk-discount-table">
+  <div id="table-div">
   <p id="custom-txt">Buy More, Save More!</p>
-  <table class="cus-table border-cus">
+  <table id="table-tag" class="cus-table border-cus">
     <thead bgcolor="#E0E4FF">
       <tr class="border-cus">
         <th class="cus-table cus-pad">Quantities</th>
@@ -90,33 +93,30 @@ function addTable(){
     </tbody>
   </table>
   <p id="cus-seemore"><a href="" id="cus-link">See More</a></p>
+  </div>
   </div>`
   var div5 = document.createElement("div");
   div5.innerHTML = x.trim();
   return div5.firstChild;
 }
 
+if(design.design.clockToggle){
 {% if rules.size>0 %}
   let tab1=addTable();
-  const productdes=document.querySelectorAll('.product__description')[0];
-
-  productdes.insertBefore(tab1, productdes.firstChild);
-
-  document.getElementById("table-div").style.width="fit-content";
-  document.getElementById("table-div").style.color="#081E57";
-  document.getElementById("table-div").style.fontSize="14px";
-  document.getElementById("custom-txt").style.fontWeight="600";
-  document.getElementById("custom-txt").style.fontSize="14px";
-  document.getElementById("cus-seemore").style.textAlign="center";
-  document.getElementById("cus-link").style.color="#4765F0";
-  document.getElementById("cus-link").style.fontSize="13px";
-  
-  let rows=document.querySelectorAll('.cus-table-row');
-  for(let q=0;q<rows.length;q++)
-  {
-    if(q%2==0) rows[q].style.backgroundColor="#F6F6F6";
-    else rows[q].style.backgroundColor="#FFFFFF"
+  const appBlock=document.getElementById("bevysales_table");
+  if(appBlock) appBlock.appendChild(tab1);
+  else {
+    const productdes=document.querySelectorAll('.product__description')[0];
+    productdes.insertBefore(tab1, productdes.firstChild);
   }
+  
+  document.getElementById("bulk-discount-table").style.cssText=`
+      font-size: ${design.design.basicSettings.fontSize}pt;
+      color: ${design.design.basicSettings.fontColor};
+      text-align: ${design.design.basicSettings.textAlign};
+      font-family: ${design.design.basicSettings.fontFamily};
+      font-weight: ${design.design.basicSettings.fontWeight} !important;
+  `;
 
   let brdr=document.querySelectorAll(".cus-table");
 
@@ -124,24 +124,61 @@ function addTable(){
   {
     brdr[q].style.border="none";
     brdr[q].style.borderCollapse = "collapse";
+    brdr[q].style.marginTop = `${design.design.basicSettings.margin}px`;
+    brdr[q].style.marginBottom = `${design.design.basicSettings.margin}px`;
+    brdr[q].style.padding= `${design.design.basicSettings.padding}px`;
   }
 
   let brdr1=document.querySelectorAll(".border-cus");
 
   for(let q=0;q<brdr1.length;q++)
   {
-    brdr1[q].style.border="1px solid #CED4DA";
+    brdr1[q].style.border=`1px solid ${design.design.basicSettings.borderColor}`;
   }
 
+  let rows=document.querySelectorAll('.cus-table-row');
+  for(let q=0;q<rows.length;q++)
+  {
+    if(q%2==0) rows[q].style.backgroundColor=`${design.design.basicSettings.backgroudColor}`;
+    else rows[q].style.backgroundColor=`${design.design.basicSettings.alternativeRowBackgroundColor}`;
+  }
 
   let pad=document.querySelectorAll(".cus-pad");
 
   for(let q=0;q<pad.length;q++)
   {
-    pad[q].style.padding="10px 50px 10px 20px";
+    pad[q].style.padding=`${design.design.basicSettings.padding}px`;
   }
 
+  let borderTH=document.querySelectorAll(".border-cus th");
+
+  for(let q=0;q<borderTH.length;q++)
+  {
+    borderTH[q].style.cssText=`
+      text-align: ${design.design.TableHeading.textAlign};
+      font-size: ${design.design.TableHeading.fontSize}pt;
+      color: ${design.design.TableHeading.fontColor};
+      font-family: ${design.design.TableHeading.fontFamily};
+      background-color: ${design.design.TableHeading.backgroudColor};
+      font-weight: ${design.design.TableHeading.fontWeight};
+      margin: ${design.design.TableHeading.margin}px;
+      padding: ${design.design.TableHeading.padding}px;
+    `;
+  }
+
+  document.getElementById("table-tag").style.width="100%";
+
+  document.getElementById("cus-seemore").style.textAlign="center";
+  document.getElementById("cus-link").style.color="#4765F0";
+  document.getElementById("cus-link").style.fontSize="13px";
+  //document.getElementById("table-tag").style.maxWidth="fit-content";
+
+
+  //document.getElementById("table-div").style.width="fit-content";
+  
+
 {% endif %}
+}
 </script>
 
 <script>
